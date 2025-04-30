@@ -1,0 +1,112 @@
+name: Build Nextcloud Image with SMB client
+
+on:
+  schedule:
+    - cron: '0 13,23 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: Check for base image update
+        id: check-update
+        run: |
+          API_URL="https://hub.docker.com/v2/repositories/library/nextcloud/tags/apache/"
+          response=$(curl -s "$API_URL")
+          current_timestamp=$(echo "$response" | jq -r '.last_updated')
+
+          echo "Current timestamp: $current_timestamp"
+
+          if [ -f .last_checked ]; then
+            previous_timestamp=$(cat .last_checked)
+            echo "Previous timestamp: $previous_timestamp"
+
+            if [ "$current_timestamp" != "$previous_timestamp" ]; then
+              echo "build_needed=true" >> $GITHUB_OUTPUT
+            else
+              echo "build_needed=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "First run: building"
+            echo "build_needed=true" >> $GITHUB_OUTPUT
+          fi
+
+          echo "CURRENT_TIMESTAMP=$current_timestamp" >> $GITHUB_ENV
+
+      - name: Setup Docker Buildx
+        if: steps.check-update.outputs.build_needed == 'true'
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+
+      - name: Login to GHCR
+        if: steps.check-update.outputs.build_needed == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          logout: true
+
+      - name: Build and push image
+        if: steps.check-update.outputs.build_needed == 'true'
+        run: |
+          temp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
+          cp -r . "$temp_dir"
+          cd "$temp_dir"
+
+          SAFE_TAG=$(date -u -d "$CURRENT_TIMESTAMP" +%Y%m%d)
+          echo "Building with tags: apache and $SAFE_TAG"
+
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --provenance=false \
+            --sbom=false \
+            --tag ghcr.io/${{ github.repository_owner }}/nextcloud-full:apache \
+            --tag ghcr.io/${{ github.repository_owner }}/nextcloud-full:$SAFE_TAG \
+            --push \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            .
+
+      - name: Update timestamp file
+        if: steps.check-update.outputs.build_needed == 'true'
+        run: |
+          echo "$CURRENT_TIMESTAMP" > .last_checked
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          git pull --quiet
+          git add -f .last_checked
+          # Check if there's ACTUALLY a change in the staged file
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0  # Gracefully exit if no changes
+          fi
+
+          # Commit and push only if changes exist
+          git commit -m "Update .last_checked timestamp"
+          git push origin HEAD:${GITHUB_REF} --no-verify
+
+
+    env:
+      DOCKER_CONTENT_TRUST: 1
+      BUILDKIT_PROGRESS: plain
