@@ -3,5 +3,6 @@
 # Ignore all dotfiles by default
 .*
 # Except these specific tracked files
+!.github
 !.gitignore
 !.last_checked  # Explicitly allow our timestamp file
