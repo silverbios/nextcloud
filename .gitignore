@@ -1,0 +1,7 @@
+# .gitignore
+
+# Ignore all dotfiles by default
+.*
+# Except these specific tracked files
+!.gitignore
+!.last_checked  # Explicitly allow our timestamp file
