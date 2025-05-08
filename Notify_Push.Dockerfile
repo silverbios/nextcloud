@@ -1,31 +1,19 @@
-# SPDX-FileCopyrightText: 2021 Nextcloud GmbH and Nextcloud contributors
-# SPDX-License-Identifier: AGPL-3.0-or-later
-FROM clux/muslrust:stable AS build
+FROM alpine:3.19 AS downloader
 
-RUN git clone https://github.com/nextcloud/notify_push
+ARG NOTIFY_PUSH_VERSION
+ARG TARGETARCH
 
-COPY Cargo.toml Cargo.lock ./
-
-# Build with a dummy main to pre-build dependencies
-RUN mkdir src && \
- sed -i '/test_client/d' Cargo.toml && \
- echo "fn main(){}" > src/main.rs && \
- cargo build --release && \
- rm -r src
-
-COPY build.rs ./
-COPY appinfo/info.xml ./appinfo/
-COPY src/ ./src/
-RUN touch src/main.rs
-
-RUN cargo build --release
-
-# Pick the executable file for the right architecture and system
-RUN mv /volume/target/*-unknown-*-musl/release/notify_push /notify_push
+RUN case "$TARGETARCH" in \
+      amd64)   ARCH="x86_64" ;; \
+      arm64)   ARCH="aarch64" ;; \
+      *) echo "Unsupported arch: $TARGETARCH" && exit 1 ;; \
+    esac && \
+    apk add --no-cache curl && \
+    curl -L "https://github.com/nextcloud/notify_push/releases/download/${NOTIFY_PUSH_VERSION}/notify_push-${ARCH}-unknown-linux-musl" -o /notify_push && \
+    chmod +x /notify_push
 
 FROM scratch
+COPY --from=downloader /notify_push /notify_push
 
-COPY --from=build /notify_push /
 EXPOSE 7867
-
-CMD ["/notify_push"]
+ENTRYPOINT ["/notify_push"]
