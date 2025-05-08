@@ -64,6 +64,7 @@ jobs:
       - name: Build and push image
         run: |
           echo "Building for release $LATEST_TAG"
+          echo $LATEST_TAG
           if [ -z "$LATEST_TAG" ]; then
             echo "Missing latest tag, aborting."
             exit 1
