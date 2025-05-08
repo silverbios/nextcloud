@@ -105,8 +105,7 @@ jobs:
 
       - name: Update last_release file
         run: |
-          last_file=".github/workflows/state/.last_release"
-          echo "$LATEST_TAG" > "$last_file"
+          install -D <(echo "$LATEST_TAG") "$NP_VERSION"
 
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
