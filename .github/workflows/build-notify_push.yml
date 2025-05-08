@@ -109,29 +109,14 @@ jobs:
 
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-
+              
           git pull --quiet
           git add -f "$NP_VERSION"
+              
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
           fi
-
-          git commit -m "Update .last_release_np to $LATEST_TAG"
-          git push origin HEAD:${GITHUB_REF} --no-verify
-
-
-          install -D <(echo "$LATEST_TAG") "$NP_VERSION"
-          
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-          git pull --quiet
-          git add -f "$NP_VERSION"
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-
-          git commit -m "Update .last_release_np to $LATEST_TAG"
+              
+          git commit -m "Update .last_release to $LATEST_TAG"
           git push origin HEAD:${GITHUB_REF} --no-verify
