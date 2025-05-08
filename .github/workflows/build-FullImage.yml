@@ -87,7 +87,8 @@ jobs:
             --push \
             --cache-from type=gha \
             --cache-to type=gha,mode=max \
-            --file ./NextCloud.Dockerfile
+            --file ./NextCloud.Dockerfile \
+            .
 
   update-checkpoint:
     needs: [check-version, build]
