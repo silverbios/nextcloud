@@ -1,8 +1,9 @@
 # .gitignore
 
-# Ignore all dotfiles by default
-.*
-# Except these specific tracked files
-!.github
-!.gitignore
-!.last_checked  # Explicitly allow our timestamp file
+# env file
+.env
+
+# But not these files...
+!/.gitignore
+# ...even if they are in subdirectories
+!*/
