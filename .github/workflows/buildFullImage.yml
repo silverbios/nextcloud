@@ -12,6 +12,7 @@ permissions:
 
 env:
   BUILDKIT_PROGRESS: plain
+  NC_VERSION: .github/.state/.last_checked
 
 jobs:
   check-version:
@@ -34,7 +35,6 @@ jobs:
           current_timestamp=$(echo "$response" | jq -r '.last_updated')
           echo "Current timestamp: $current_timestamp"
 
-          NC_VERSION=".github/.state/.last_checked"
           mkdir -p "$(dirname "$NC_VERSION")"
 
           if [ -f "$NC_VERSION" ]; then
@@ -42,16 +42,16 @@ jobs:
             echo "Previous timestamp: $previous_timestamp"
 
             if [ "$current_timestamp" != "$previous_timestamp" ]; then
-              echo "build_needed=true" >> $GITHUB_OUTPUT
+              echo "build_needed=true" >> "$GITHUB_OUTPUT"
             else
-              echo "build_needed=false" >> $GITHUB_OUTPUT
+              echo "build_needed=false" >> "$GITHUB_OUTPUT"
             fi
           else
             echo "First run - build needed"
-            echo "build_needed=true" >> $GITHUB_OUTPUT
+            echo "build_needed=true" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "current_timestamp=$current_timestamp" >> $GITHUB_OUTPUT
+          echo "current_timestamp=$current_timestamp" >> "$GITHUB_OUTPUT"
 
   build:
     needs: check-version
@@ -79,6 +79,11 @@ jobs:
 
       - name: Build and push image
         run: |
+          if [ -z "$CURRENT_TIMESTAMP" ]; then
+            echo "Missing CURRENT_TIMESTAMP, aborting."
+            exit 1
+          fi
+
           SAFE_TAG=$(date -u -d "$CURRENT_TIMESTAMP" +%Y%m%d)
           echo "Building with tags: apache and $SAFE_TAG"
 
@@ -105,7 +110,6 @@ jobs:
 
       - name: Update last_checked file
         run: |
-          NC_VERSION=".github/workflows/state/.last_checked"
           mkdir -p "$(dirname "$NC_VERSION")"
           echo "$CURRENT_TIMESTAMP" > "$NC_VERSION"
 
