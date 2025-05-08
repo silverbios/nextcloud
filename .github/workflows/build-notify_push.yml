@@ -103,26 +103,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Update last_release file
+      - name: Update last_release_np file
         run: |
           install -D <(echo "$LATEST_TAG") "$NP_VERSION"
-
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-          git pull --quiet
-          git add -f "$last_file"
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-
-          git commit -m "Update .last_release to $LATEST_TAG"
-          git push origin HEAD:${GITHUB_REF} --no-verify
-
-
-          mkdir -p "$(dirname "$NP_VERSION")"
-          echo "$LATEST_TAG" > "$NP_VERSION"
 
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
@@ -134,5 +117,21 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update .last_release to $LATEST_TAG"
+          git commit -m "Update .last_release_np to $LATEST_TAG"
+          git push origin HEAD:${GITHUB_REF} --no-verify
+
+
+          install -D <(echo "$LATEST_TAG") "$NP_VERSION"
+          
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          git pull --quiet
+          git add -f "$NP_VERSION"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Update .last_release_np to $LATEST_TAG"
           git push origin HEAD:${GITHUB_REF} --no-verify
