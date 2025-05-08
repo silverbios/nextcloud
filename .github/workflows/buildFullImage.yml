@@ -34,11 +34,11 @@ jobs:
           current_timestamp=$(echo "$response" | jq -r '.last_updated')
           echo "Current timestamp: $current_timestamp"
 
-          LAST_FILE=".github/workflows/state/.last_checked"
-          mkdir -p "$(dirname "$LAST_FILE")"
+          NC_VERSION=".github/.state/.last_checked"
+          mkdir -p "$(dirname "$NC_VERSION")"
 
-          if [ -f "$LAST_FILE" ]; then
-            previous_timestamp=$(cat "$LAST_FILE")
+          if [ -f "$NC_VERSION" ]; then
+            previous_timestamp=$(cat "$NC_VERSION")
             echo "Previous timestamp: $previous_timestamp"
 
             if [ "$current_timestamp" != "$previous_timestamp" ]; then
@@ -105,15 +105,15 @@ jobs:
 
       - name: Update last_checked file
         run: |
-          LAST_FILE=".github/workflows/state/.last_checked"
-          mkdir -p "$(dirname "$LAST_FILE")"
-          echo "$CURRENT_TIMESTAMP" > "$LAST_FILE"
+          NC_VERSION=".github/workflows/state/.last_checked"
+          mkdir -p "$(dirname "$NC_VERSION")"
+          echo "$CURRENT_TIMESTAMP" > "$NC_VERSION"
 
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
           git pull --quiet
-          git add -f "$LAST_FILE"
+          git add -f "$NC_VERSION"
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
