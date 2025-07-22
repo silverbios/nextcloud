@@ -75,6 +75,7 @@ jobs:
 
       - name: Build and push image
         run: |
+          export LATEST_TAG="${{ env.LATEST_TAG }}"
           echo "Building for release $LATEST_TAG"
 
           if [ -z "$LATEST_TAG" ]; then
