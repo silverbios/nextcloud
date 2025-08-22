@@ -2,7 +2,7 @@ name: Build on New notify_push Release
 
 on:
   schedule:
-    - cron: '0 09,17,01 * * *'
+    - cron: '0 08,16,00 * * *'
   workflow_dispatch:
 
 permissions:
